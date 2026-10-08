@@ -610,14 +610,11 @@ if question:
     with st.chat_message("user"):
         st.write(question)
 
-
     with st.spinner(
         "Searching Medibank official information..."
     ):
 
-        results = search_medibank(
-            question
-        )
+        results = search_medibank(question)
 
         answer = generate_ai_answer(
             question,
@@ -625,36 +622,19 @@ if question:
             language
         )
 
+    sources = []
+    used_urls = set()
 
-    if not answer:
+    for item in results[:3]:
 
-        answer = (
-            "I couldn't find enough reliable information "
-            "from the selected Medibank pages."
-        )
+        if item["url"] not in used_urls:
 
-        sources = []
+            used_urls.add(item["url"])
 
-    else:
-
-        # Unique sources only
-        sources = []
-
-        used_urls = set()
-
-        for item in selected:
-
-            if item["url"] not in used_urls:
-
-                used_urls.add(
-                    item["url"]
-                )
-
-                sources.append({
-                    "source": item["source"],
-                    "url": item["url"]
-                })
-
+            sources.append({
+                "source": item["source"],
+                "url": item["url"]
+            })
 
     with st.chat_message("assistant"):
 
@@ -671,13 +651,11 @@ if question:
                     f"({source['url']})"
                 )
 
-
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer,
         "sources": sources
     })
-
 
 # --------------------------------------------------
 # DISCLAIMER
