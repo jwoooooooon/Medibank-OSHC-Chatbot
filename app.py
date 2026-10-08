@@ -453,11 +453,7 @@ RULES:
         return response.choices[0].message.content
 
     except Exception as e:
-
-        return (
-            "The AI response service is temporarily unavailable. "
-            "Please try again later."
-        )
+        return f"AI error: {type(e).__name__}: {str(e)}"
         
 # --------------------------------------------------
 # SCORE INDIVIDUAL SENTENCES
