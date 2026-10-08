@@ -4,6 +4,11 @@ from bs4 import BeautifulSoup
 import re
 from difflib import SequenceMatcher
 import html
+from google import genai
+
+client = genai.Client(
+    api_key=st.secrets["GEMINI_API_KEY"]
+)
 
 st.set_page_config(
     page_title="Medibank OSHC Assistant",
@@ -384,7 +389,55 @@ def search_medibank(question):
 
     return results[:3]
 
+def generate_ai_answer(question, results, language):
 
+    if not results:
+        return "I couldn't find enough information from the Medibank website."
+
+    context = ""
+
+    for result in results[:3]:
+        context += f"""
+Source: {result['source']}
+Information:
+{result['text']}
+
+"""
+
+    prompt = f"""
+You are a Medibank OSHC information assistant.
+
+Answer the user's question using ONLY the official Medibank
+information provided below.
+
+User question:
+{question}
+
+Official Medibank information:
+{context}
+
+Preferred language:
+{language}
+
+Rules:
+- Answer in the user's preferred language.
+- Use natural and easy-to-understand language.
+- Keep the answer concise.
+- Do not invent insurance benefits or policy details.
+- If the provided information is insufficient, clearly say so.
+- Do not provide medical diagnosis.
+- Do not mention that you are Gemini.
+- Do not say "according to the context".
+- Answer directly like a helpful customer support assistant.
+"""
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+
+    return response.text
+        
 # --------------------------------------------------
 # SCORE INDIVIDUAL SENTENCES
 # --------------------------------------------------
