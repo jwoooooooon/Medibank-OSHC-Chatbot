@@ -4,14 +4,14 @@ from bs4 import BeautifulSoup
 import re
 from difflib import SequenceMatcher
 import html
-from google import genai
+from huggingface_hub import InferenceClient
 
-if "GEMINI_API_KEY" not in st.secrets:
-    st.error("Gemini API key is not configured.")
+if "HF_TOKEN" not in st.secrets:
+    st.error("Hugging Face token is not configured.")
     st.stop()
 
-client = genai.Client(
-    api_key=st.secrets["GEMINI_API_KEY"]
+client = InferenceClient(
+    api_key=st.secrets["HF_TOKEN"]
 )
 
 st.set_page_config(
