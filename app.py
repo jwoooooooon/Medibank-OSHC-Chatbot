@@ -14,10 +14,50 @@ st.set_page_config(
 st.title("💬 Medibank OSHC Assistant")
 st.caption("Searches official Medibank OSHC pages for relevant information")
 
+# language selector
+
 language = st.selectbox(
     "Choose your preferred language",
     ["English", "简体中文"]
 )
+
+# clickable suggested question
+
+st.markdown("### Try asking:")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("Compare Comprehensive & Essentials"):
+        st.session_state.suggested_question = (
+            "What is the difference between Comprehensive and Essentials OSHC?"
+        )
+
+    if st.button("Does OSHC cover dental?"):
+        st.session_state.suggested_question = (
+            "Does OSHC cover dental treatment?"
+        )
+
+    if st.button("How do I make a claim?"):
+        st.session_state.suggested_question = (
+            "How do I make an OSHC claim?"
+        )
+
+with col2:
+    if st.button("Can I get an interpreter?"):
+        st.session_state.suggested_question = (
+            "Can I get an interpreter?"
+        )
+
+    if st.button("What happens in an emergency?"):
+        st.session_state.suggested_question = (
+            "What should I do in a medical emergency?"
+        )
+
+    if st.button("Does OSHC cover prescription medicine?"):
+        st.session_state.suggested_question = (
+            "Does OSHC cover prescription medicine?"
+        )
 
 # --------------------------------------------------
 # OFFICIAL MEDIBANK SOURCES
