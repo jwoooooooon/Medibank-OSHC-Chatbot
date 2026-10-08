@@ -47,7 +47,12 @@ def clean_text(text):
     # Decode HTML entities
     text = html.unescape(text)
 
-    # Common broken UTF-8 characters
+    # Try to repair common UTF-8 mojibake
+    try:
+        text = text.encode("latin1").decode("utf-8")
+    except:
+        pass
+
     replacements = {
         "â€¢": "•",
         "â€“": "–",
@@ -55,18 +60,19 @@ def clean_text(text):
         "â€™": "'",
         "â€œ": '"',
         "â€": '"',
+        "â€¦": "...",
         "Â": "",
         "\xa0": " ",
-        "�": ""
+        "�": "",
+        "â„¢": "™",
+        "â‚¬": "€"
     }
 
     for bad, good in replacements.items():
         text = text.replace(bad, good)
 
-    # Remove repeated spaces
     text = re.sub(r"\s+", " ", text)
 
-    # Remove odd control characters
     text = re.sub(
         r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]",
         "",
