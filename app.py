@@ -6,6 +6,10 @@ from difflib import SequenceMatcher
 import html
 from google import genai
 
+if "GEMINI_API_KEY" not in st.secrets:
+    st.error("Gemini API key is not configured.")
+    st.stop()
+
 client = genai.Client(
     api_key=st.secrets["GEMINI_API_KEY"]
 )
