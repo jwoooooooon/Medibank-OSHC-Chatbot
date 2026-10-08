@@ -104,7 +104,7 @@ def get_page_text(url):
         response.raise_for_status()
 
         # Force correct encoding if needed
-        response.encoding = response.apparent_encoding
+        response.encoding = "utf-8"
 
         soup = BeautifulSoup(
             response.text,
