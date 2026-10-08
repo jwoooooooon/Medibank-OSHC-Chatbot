@@ -533,9 +533,15 @@ for message in st.session_state.messages:
 # USER INPUT
 # --------------------------------------------------
 
-question = st.chat_input(
+typed_question = st.chat_input(
     "Ask about Medibank OSHC..."
 )
+
+question = typed_question
+
+if "suggested_question" in st.session_state:
+    question = st.session_state.suggested_question
+    del st.session_state.suggested_question
 
 
 if question:
