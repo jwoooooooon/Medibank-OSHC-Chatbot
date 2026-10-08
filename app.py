@@ -62,7 +62,10 @@ st.markdown("""
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
         margin: 4px 0 22px 0;
+        text-align: center;
     }
 
     .trust-pill {
@@ -133,21 +136,6 @@ st.markdown("""
     <span class="trust-pill">✓ Source links included</span>
 </div>
 """, unsafe_allow_html=True)
-
-language = st.selectbox(
-    "Choose your preferred language",
-    ["English", "简体中文", "Bahasa Melayu"]
-)
-
-reset_col, info_col = st.columns([1, 3])
-
-with reset_col:
-    if st.button("↻ New chat"):
-        st.session_state.messages = []
-        st.rerun()
-
-with info_col:
-    st.caption("Ask below, or use one of the quick questions near the chat box.")
 
 # --------------------------------------------------
 # OFFICIAL MEDIBANK SOURCES
@@ -705,45 +693,120 @@ for message in st.session_state.messages:
                 )
 
 # --------------------------------------------------
+# CHAT CONTROLS
+# --------------------------------------------------
+
+settings_col1, settings_col2 = st.columns([3, 1])
+
+with settings_col1:
+    language = st.selectbox(
+        "Language",
+        ["English", "简体中文", "Bahasa Melayu"],
+        label_visibility="collapsed"
+    )
+
+settings_label = {
+    "English": "Chat settings",
+    "简体中文": "聊天设置",
+    "Bahasa Melayu": "Tetapan chat"
+}[language]
+
+st.markdown(f'<div class="section-label">{settings_label}</div>', unsafe_allow_html=True)
+
+new_chat_label = {
+    "English": "↻ New chat",
+    "简体中文": "↻ 新聊天",
+    "Bahasa Melayu": "↻ Chat baharu"
+}[language]
+
+with settings_col2:
+    if st.button(new_chat_label, use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+# Suggested-question text changes with the selected language
+SUGGESTED_QUESTIONS = {
+    "English": [
+        ("What is the difference between Comprehensive and Essentials?", 
+         "What is the difference between Comprehensive and Essentials OSHC?"),
+        ("Does OSHC cover dental treatment?", 
+         "Does OSHC cover dental treatment?"),
+        ("How do I make an OSHC claim?", 
+         "How do I make an OSHC claim?"),
+        ("Can I get an interpreter?", 
+         "Can I get an interpreter?"),
+        ("What should I do in a medical emergency?", 
+         "What should I do in a medical emergency?"),
+        ("Does OSHC cover prescription medicine?", 
+         "Does OSHC cover prescription medicine?")
+    ],
+
+    "简体中文": [
+        ("Comprehensive 和 Essentials 有什么区别？", 
+         "Comprehensive 和 Essentials OSHC 有什么区别？"),
+        ("OSHC 包牙科治疗吗？", 
+         "OSHC 包牙科治疗吗？"),
+        ("我要怎么申请 OSHC 报销？", 
+         "我要怎么申请 OSHC 报销？"),
+        ("我可以要求翻译服务吗？", 
+         "我可以要求翻译服务吗？"),
+        ("发生医疗紧急情况时该怎么办？", 
+         "发生医疗紧急情况时该怎么办？"),
+        ("OSHC 包处方药吗？", 
+         "OSHC 包处方药吗？")
+    ],
+
+    "Bahasa Melayu": [
+        ("Apakah perbezaan Comprehensive dan Essentials?", 
+         "Apakah perbezaan antara Comprehensive dan Essentials OSHC?"),
+        ("Adakah OSHC melindungi rawatan pergigian?", 
+         "Adakah OSHC melindungi rawatan pergigian?"),
+        ("Bagaimana saya membuat tuntutan OSHC?", 
+         "Bagaimana saya membuat tuntutan OSHC?"),
+        ("Bolehkah saya mendapatkan jurubahasa?", 
+         "Bolehkah saya mendapatkan jurubahasa?"),
+        ("Apa perlu saya lakukan semasa kecemasan perubatan?", 
+         "Apa perlu saya lakukan semasa kecemasan perubatan?"),
+        ("Adakah OSHC melindungi ubat preskripsi?", 
+         "Adakah OSHC melindungi ubat preskripsi?")
+    ]
+}
+
+# --------------------------------------------------
 # QUICK QUESTIONS NEAR CHAT
 # --------------------------------------------------
 
-st.markdown('<div class="section-label">Quick questions</div>', unsafe_allow_html=True)
+suggested_label = {
+    "English": "Suggested questions",
+    "简体中文": "建议问题",
+    "Bahasa Melayu": "Soalan cadangan"
+}[language]
 
-q1, q2, q3 = st.columns(3)
+st.markdown(f'<div class="section-label">{suggested_label}</div>', unsafe_allow_html=True)
 
-with q1:
-    if st.button("Compare plans", use_container_width=True):
-        st.session_state.suggested_question = (
-            "What is the difference between Comprehensive and Essentials OSHC?"
-        )
+questions = SUGGESTED_QUESTIONS[language]
 
-    if st.button("Dental cover", use_container_width=True):
-        st.session_state.suggested_question = (
-            "Does OSHC cover dental treatment?"
-        )
+col1, col2 = st.columns(2)
 
-with q2:
-    if st.button("Make a claim", use_container_width=True):
-        st.session_state.suggested_question = (
-            "How do I make an OSHC claim?"
-        )
+with col1:
+    if st.button(questions[0][0], use_container_width=True):
+        st.session_state.suggested_question = questions[0][1]
 
-    if st.button("Interpreter", use_container_width=True):
-        st.session_state.suggested_question = (
-            "Can I get an interpreter?"
-        )
+    if st.button(questions[1][0], use_container_width=True):
+        st.session_state.suggested_question = questions[1][1]
 
-with q3:
-    if st.button("Emergency", use_container_width=True):
-        st.session_state.suggested_question = (
-            "What should I do in a medical emergency?"
-        )
+    if st.button(questions[2][0], use_container_width=True):
+        st.session_state.suggested_question = questions[2][1]
 
-    if st.button("Prescription medicine", use_container_width=True):
-        st.session_state.suggested_question = (
-            "Does OSHC cover prescription medicine?"
-        )
+with col2:
+    if st.button(questions[3][0], use_container_width=True):
+        st.session_state.suggested_question = questions[3][1]
+
+    if st.button(questions[4][0], use_container_width=True):
+        st.session_state.suggested_question = questions[4][1]
+
+    if st.button(questions[5][0], use_container_width=True):
+        st.session_state.suggested_question = questions[5][1]
 
 # --------------------------------------------------
 # USER INPUT
