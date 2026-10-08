@@ -179,8 +179,8 @@ def get_page_text(url):
 
         return clean_text(text)
 
-    except Exception:
-        return ""
+    except Exception as e:
+        return f"AI error: {str(e)}"
 
 
 # --------------------------------------------------
