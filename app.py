@@ -23,8 +23,22 @@ st.markdown("""
 <style>
     .block-container {
         max-width: 900px;
-        padding-top: 2rem;
+        padding-top: 4.75rem;
         padding-bottom: 3rem;
+    }
+
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 5.5rem;
+        }
+
+        .hero {
+            padding: 24px 22px;
+        }
+
+        .hero-title {
+            font-size: 1.9rem;
+        }
     }
 
     .hero {
@@ -696,22 +710,30 @@ for message in st.session_state.messages:
 # CHAT CONTROLS
 # --------------------------------------------------
 
+# Read the language selection first so the section label can match it
+if "language" not in st.session_state:
+    st.session_state.language = "English"
+
+settings_label = {
+    "English": "Chat settings",
+    "简体中文": "聊天设置",
+    "Bahasa Melayu": "Tetapan chat"
+}[st.session_state.language]
+
+st.markdown(
+    f'<div class="section-label">{settings_label}</div>',
+    unsafe_allow_html=True
+)
+
 settings_col1, settings_col2 = st.columns([3, 1])
 
 with settings_col1:
     language = st.selectbox(
         "Language",
         ["English", "简体中文", "Bahasa Melayu"],
+        key="language",
         label_visibility="collapsed"
     )
-
-settings_label = {
-    "English": "Chat settings",
-    "简体中文": "聊天设置",
-    "Bahasa Melayu": "Tetapan chat"
-}[language]
-
-st.markdown(f'<div class="section-label">{settings_label}</div>', unsafe_allow_html=True)
 
 new_chat_label = {
     "English": "↻ New chat",
