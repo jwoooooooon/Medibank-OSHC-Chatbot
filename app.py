@@ -462,6 +462,9 @@ def create_concise_answer(question, results, language):
             item["sentence"]
         )
 
+        if len(sentence) > 280:
+            sentence = sentence[:280].rsplit(" ", 1)[0] + "..."
+
         # Avoid duplicates
         normalized = sentence.lower()
 
@@ -475,7 +478,7 @@ def create_concise_answer(question, results, language):
         seen.add(normalized)
         selected.append(item)
 
-        if len(selected) == 3:
+        if len(selected) == 2:
             break
 
     if not selected:
