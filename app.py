@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -781,6 +782,9 @@ if question:
                 "url": item["url"]
             })
 
+    # Anchor used for automatic scrolling to the newest answer
+    st.markdown('<div id="latest-answer"></div>', unsafe_allow_html=True)
+
     with st.chat_message("assistant"):
         st.write(answer)
 
@@ -797,6 +801,24 @@ if question:
         "sources": sources
     })
 
+    # Automatically scroll the page to the newest answer
+    components.html(
+        """
+        <script>
+            setTimeout(function() {
+                const target = window.parent.document.getElementById("latest-answer");
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+                }
+            }, 250);
+        </script>
+        """,
+        height=0,
+    )
+
 # --------------------------------------------------
 # DISCLAIMER
 # --------------------------------------------------
@@ -811,4 +833,3 @@ from selected publicly available Medibank OSHC pages and should be confirmed aga
 official policy documents.
 </div>
 """, unsafe_allow_html=True)
-
