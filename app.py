@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from difflib import SequenceMatcher
+import html
 
 st.set_page_config(
     page_title="Medibank OSHC Assistant",
@@ -38,6 +39,44 @@ SOURCES = {
 
 
 # --------------------------------------------------
+# TEXT CLEANING
+# --------------------------------------------------
+
+def clean_text(text):
+
+    # Decode HTML entities
+    text = html.unescape(text)
+
+    # Common broken UTF-8 characters
+    replacements = {
+        "â€¢": "•",
+        "â€“": "–",
+        "â€”": "—",
+        "â€™": "'",
+        "â€œ": '"',
+        "â€": '"',
+        "Â": "",
+        "\xa0": " ",
+        "�": ""
+    }
+
+    for bad, good in replacements.items():
+        text = text.replace(bad, good)
+
+    # Remove repeated spaces
+    text = re.sub(r"\s+", " ", text)
+
+    # Remove odd control characters
+    text = re.sub(
+        r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]",
+        "",
+        text
+    )
+
+    return text.strip()
+
+
+# --------------------------------------------------
 # DOWNLOAD WEBSITE TEXT
 # --------------------------------------------------
 
@@ -58,18 +97,22 @@ def get_page_text(url):
 
         response.raise_for_status()
 
+        # Force correct encoding if needed
+        response.encoding = response.apparent_encoding
+
         soup = BeautifulSoup(
             response.text,
             "html.parser"
         )
 
-        # Remove scripts/style/navigation noise
+        # Remove noise
         for element in soup([
             "script",
             "style",
             "nav",
             "footer",
-            "header"
+            "header",
+            "noscript"
         ]):
             element.decompose()
 
@@ -78,28 +121,33 @@ def get_page_text(url):
             strip=True
         )
 
-        text = re.sub(
-            r"\s+",
-            " ",
-            text
-        )
-
-        return text
+        return clean_text(text)
 
     except Exception:
         return ""
 
 
 # --------------------------------------------------
-# SPLIT TEXT INTO SEARCHABLE CHUNKS
+# SPLIT INTO SENTENCES / CHUNKS
 # --------------------------------------------------
 
-def split_text(text, chunk_size=450):
+def split_sentences(text):
 
     sentences = re.split(
         r"(?<=[.!?])\s+",
         text
     )
+
+    return [
+        s.strip()
+        for s in sentences
+        if len(s.strip()) > 30
+    ]
+
+
+def split_text(text, chunk_size=500):
+
+    sentences = split_sentences(text)
 
     chunks = []
     current = ""
@@ -132,7 +180,8 @@ def clean_words(text):
         "an", "does", "do", "my", "me",
         "i", "can", "how", "to", "of",
         "for", "and", "in", "with",
-        "oshc", "medibank"
+        "oshc", "medibank",
+        "please", "tell", "about"
     }
 
     words = re.findall(
@@ -149,7 +198,44 @@ def clean_words(text):
 
 
 # --------------------------------------------------
-# SCORE RELEVANCE
+# SYNONYMS
+# --------------------------------------------------
+
+SYNONYMS = {
+    "dentist": ["dental"],
+    "teeth": ["dental"],
+
+    "doctor": ["gp", "general practitioner"],
+    "sick": ["gp", "general practitioner"],
+
+    "medicine": ["pharmacy", "prescription"],
+    "medication": ["pharmacy", "prescription"],
+    "drug": ["pharmacy", "prescription"],
+
+    "refund": ["claim", "claims"],
+    "reimburse": ["claim", "claims"],
+
+    "emergency": ["ambulance", "emergency"],
+    "urgent": ["emergency"],
+
+    "compare": ["comprehensive", "essentials"],
+    "difference": ["comprehensive", "essentials"],
+
+    "interpreter": ["language", "interpreter"],
+    "translation": ["language", "interpreter"],
+
+    "psychologist": ["mental health", "psychology"],
+    "mental": ["mental health"],
+
+    "pregnancy": ["pregnancy", "maternity"],
+
+    "physio": ["physiotherapy"],
+    "physiotherapist": ["physiotherapy"]
+}
+
+
+# --------------------------------------------------
+# SCORE CHUNK
 # --------------------------------------------------
 
 def score_chunk(question, chunk):
@@ -161,50 +247,40 @@ def score_chunk(question, chunk):
 
     score = 0
 
-    # keyword matching
+    # direct keywords
     for word in keywords:
 
         if word in chunk_lower:
-            score += 4
+            score += 5
 
-    # useful topic synonyms
-    synonyms = {
-        "dentist": ["dental"],
-        "teeth": ["dental"],
-        "doctor": ["gp", "general practitioner"],
-        "medicine": ["pharmacy", "prescription"],
-        "drug": ["pharmacy", "prescription"],
-        "refund": ["claim"],
-        "reimburse": ["claim"],
-        "emergency": ["ambulance", "emergency"],
-        "compare": ["comprehensive", "essentials"],
-        "difference": ["comprehensive", "essentials"],
-        "interpreter": ["language", "interpreter"]
-    }
-
+    # synonym matches
     for word in keywords:
 
-        if word in synonyms:
+        if word in SYNONYMS:
 
-            for synonym in synonyms[word]:
+            for synonym in SYNONYMS[word]:
 
                 if synonym in chunk_lower:
                     score += 3
 
-    # rough fuzzy similarity
+    # phrase bonus
+    if question_lower in chunk_lower:
+        score += 8
+
+    # fuzzy similarity
     similarity = SequenceMatcher(
         None,
         question_lower,
-        chunk_lower[:300]
+        chunk_lower[:350]
     ).ratio()
 
-    score += similarity
+    score += similarity * 2
 
     return score
 
 
 # --------------------------------------------------
-# SEARCH MEDIBANK
+# BUILD DATABASE
 # --------------------------------------------------
 
 @st.cache_data(ttl=3600)
@@ -232,6 +308,10 @@ def build_database():
     return database
 
 
+# --------------------------------------------------
+# SEARCH TOP RESULTS
+# --------------------------------------------------
+
 def search_medibank(question):
 
     database = build_database()
@@ -245,10 +325,11 @@ def search_medibank(question):
             item["text"]
         )
 
-        results.append({
-            **item,
-            "score": score
-        })
+        if score > 0:
+            results.append({
+                **item,
+                "score": score
+            })
 
     results.sort(
         key=lambda x: x["score"],
@@ -259,27 +340,121 @@ def search_medibank(question):
 
 
 # --------------------------------------------------
-# SIMPLE LANGUAGE OUTPUT
+# SCORE INDIVIDUAL SENTENCES
 # --------------------------------------------------
 
-def simplify_answer(result, language):
+def score_sentence(question, sentence):
 
-    text = result["text"]
+    question_words = clean_words(question)
+    sentence_lower = sentence.lower()
 
-    if language == "简体中文":
+    score = 0
 
-        return (
-            "我从 Medibank 官方资料找到以下相关内容：\n\n"
-            + text +
-            "\n\n由于这是免费 prototype，"
-            "目前不会自动把英文完整翻译成中文。"
-            "建议查看下面的官方来源确认。"
+    for word in question_words:
+
+        if word in sentence_lower:
+            score += 5
+
+        if word in SYNONYMS:
+
+            for synonym in SYNONYMS[word]:
+
+                if synonym in sentence_lower:
+                    score += 3
+
+    similarity = SequenceMatcher(
+        None,
+        question.lower(),
+        sentence_lower
+    ).ratio()
+
+    score += similarity * 2
+
+    return score
+
+
+# --------------------------------------------------
+# CREATE CONCISE ANSWER FROM TOP 3 CHUNKS
+# --------------------------------------------------
+
+def create_concise_answer(question, results, language):
+
+    candidate_sentences = []
+
+    for result in results:
+
+        sentences = split_sentences(
+            result["text"]
         )
 
-    return (
-        "According to Medibank's official information:\n\n"
-        + text
+        for sentence in sentences:
+
+            score = score_sentence(
+                question,
+                sentence
+            )
+
+            candidate_sentences.append({
+                "sentence": sentence,
+                "score": score,
+                "source": result["source"],
+                "url": result["url"]
+            })
+
+    # Highest scoring first
+    candidate_sentences.sort(
+        key=lambda x: x["score"],
+        reverse=True
     )
+
+    selected = []
+    seen = set()
+
+    for item in candidate_sentences:
+
+        sentence = clean_text(
+            item["sentence"]
+        )
+
+        # Avoid duplicates
+        normalized = sentence.lower()
+
+        if normalized in seen:
+            continue
+
+        # Avoid useless navigation fragments
+        if len(sentence) < 35:
+            continue
+
+        seen.add(normalized)
+        selected.append(item)
+
+        if len(selected) == 3:
+            break
+
+    if not selected:
+        return None, []
+
+    answer_text = " ".join(
+        item["sentence"]
+        for item in selected
+    )
+
+    if language == "简体中文":
+        answer = (
+            "我从 Medibank 官方资料中找到以下最相关的信息：\n\n"
+            + answer_text
+            + "\n\n"
+            + "这个免费 prototype 目前不会自动进行完整中文翻译，"
+              "但会优先抽取与你问题最相关的官方内容。"
+        )
+    else:
+        answer = (
+            "Based on Medibank's official information:\n\n"
+            + answer_text
+        )
+
+    return answer, selected
 
 
 # --------------------------------------------------
@@ -293,14 +468,19 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):
+
         st.write(message["content"])
 
-        if "source" in message:
+        if "sources" in message:
 
-            st.markdown(
-                f"[Source: {message['source']}]"
-                f"({message['url']})"
-            )
+            st.markdown("**Sources:**")
+
+            for source in message["sources"]:
+
+                st.markdown(
+                    f"- [{source['source']}]"
+                    f"({source['url']})"
+                )
 
 
 # --------------------------------------------------
@@ -310,6 +490,7 @@ for message in st.session_state.messages:
 question = st.chat_input(
     "Ask about Medibank OSHC..."
 )
+
 
 if question:
 
@@ -326,61 +507,68 @@ if question:
         "Searching Medibank official information..."
     ):
 
-        results = search_medibank(question)
-
-
-    if (
-        not results
-        or results[0]["score"] < 1
-    ):
-
-        answer = (
-            "I couldn't find a reliable answer "
-            "from the selected Medibank pages."
+        results = search_medibank(
+            question
         )
 
-        source = None
-        url = None
-
-    else:
-
-        best = results[0]
-
-        answer = simplify_answer(
-            best,
+        answer, selected = create_concise_answer(
+            question,
+            results,
             language
         )
 
-        source = best["source"]
-        url = best["url"]
+
+    if not answer:
+
+        answer = (
+            "I couldn't find enough reliable information "
+            "from the selected Medibank pages."
+        )
+
+        sources = []
+
+    else:
+
+        # Unique sources only
+        sources = []
+
+        used_urls = set()
+
+        for item in selected:
+
+            if item["url"] not in used_urls:
+
+                used_urls.add(
+                    item["url"]
+                )
+
+                sources.append({
+                    "source": item["source"],
+                    "url": item["url"]
+                })
 
 
     with st.chat_message("assistant"):
 
         st.write(answer)
 
-        if source:
+        if sources:
 
-            st.markdown(
-                f"**Official source:** "
-                f"[{source}]({url})"
-            )
+            st.markdown("**Sources:**")
+
+            for source in sources:
+
+                st.markdown(
+                    f"- [{source['source']}]"
+                    f"({source['url']})"
+                )
 
 
-    message = {
+    st.session_state.messages.append({
         "role": "assistant",
-        "content": answer
-    }
-
-    if source:
-
-        message["source"] = source
-        message["url"] = url
-
-
-    st.session_state.messages.append(
-        message
-    )
+        "content": answer,
+        "sources": sources
+    })
 
 
 # --------------------------------------------------
