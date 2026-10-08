@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -121,7 +120,7 @@ st.markdown("""
     <div class="hero-kicker">Student concept prototype</div>
     <div class="hero-title">Medibank OSHC Assistant</div>
     <p class="hero-subtitle">
-        Quick, multilingual guidance using selected official Medibank OSHC information.
+        Quick multilingual guidance using selected official Medibank OSHC information.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -141,53 +140,14 @@ language = st.selectbox(
 )
 
 reset_col, info_col = st.columns([1, 3])
+
 with reset_col:
     if st.button("↻ New chat"):
         st.session_state.messages = []
         st.rerun()
 
 with info_col:
-    st.caption("Tip: use the quick questions below for the smoothest demo experience.")
-
-# --------------------------------------------------
-# SUGGESTED QUESTIONS
-# --------------------------------------------------
-
-st.markdown('<div class="section-label">Popular questions</div>', unsafe_allow_html=True)
-
-col1, col2 = st.columns(2)
-
-with col1:
-    if st.button("Compare Comprehensive & Essentials"):
-        st.session_state.suggested_question = (
-            "What is the difference between Comprehensive and Essentials OSHC?"
-        )
-
-    if st.button("Does OSHC cover dental?"):
-        st.session_state.suggested_question = (
-            "Does OSHC cover dental treatment?"
-        )
-
-    if st.button("How do I make a claim?"):
-        st.session_state.suggested_question = (
-            "How do I make an OSHC claim?"
-        )
-
-with col2:
-    if st.button("Can I get an interpreter?"):
-        st.session_state.suggested_question = (
-            "Can I get an interpreter?"
-        )
-
-    if st.button("What happens in an emergency?"):
-        st.session_state.suggested_question = (
-            "What should I do in a medical emergency?"
-        )
-
-    if st.button("Does OSHC cover prescription medicine?"):
-        st.session_state.suggested_question = (
-            "Does OSHC cover prescription medicine?"
-        )
+    st.caption("Ask below, or use one of the quick questions near the chat box.")
 
 # --------------------------------------------------
 # OFFICIAL MEDIBANK SOURCES
@@ -745,6 +705,47 @@ for message in st.session_state.messages:
                 )
 
 # --------------------------------------------------
+# QUICK QUESTIONS NEAR CHAT
+# --------------------------------------------------
+
+st.markdown('<div class="section-label">Quick questions</div>', unsafe_allow_html=True)
+
+q1, q2, q3 = st.columns(3)
+
+with q1:
+    if st.button("Compare plans", use_container_width=True):
+        st.session_state.suggested_question = (
+            "What is the difference between Comprehensive and Essentials OSHC?"
+        )
+
+    if st.button("Dental cover", use_container_width=True):
+        st.session_state.suggested_question = (
+            "Does OSHC cover dental treatment?"
+        )
+
+with q2:
+    if st.button("Make a claim", use_container_width=True):
+        st.session_state.suggested_question = (
+            "How do I make an OSHC claim?"
+        )
+
+    if st.button("Interpreter", use_container_width=True):
+        st.session_state.suggested_question = (
+            "Can I get an interpreter?"
+        )
+
+with q3:
+    if st.button("Emergency", use_container_width=True):
+        st.session_state.suggested_question = (
+            "What should I do in a medical emergency?"
+        )
+
+    if st.button("Prescription medicine", use_container_width=True):
+        st.session_state.suggested_question = (
+            "Does OSHC cover prescription medicine?"
+        )
+
+# --------------------------------------------------
 # USER INPUT
 # --------------------------------------------------
 
@@ -783,8 +784,6 @@ if question:
             })
 
     with st.chat_message("assistant"):
-        # Anchor at the top of the newest answer
-        st.markdown('<div id="latest-answer"></div>', unsafe_allow_html=True)
         st.write(answer)
 
         if sources:
@@ -793,27 +792,6 @@ if question:
                 st.markdown(
                     f"- [{source['source']}]({source['url']})"
                 )
-
-        # Smoothly scroll to the top of the newest answer only
-        components.html(
-            """
-            <script>
-                setTimeout(function() {
-                    const target = window.parent.document.getElementById("latest-answer");
-                    if (target) {
-                        const y = target.getBoundingClientRect().top
-                            + window.parent.pageYOffset
-                            - 90;
-                        window.parent.scrollTo({
-                            top: y,
-                            behavior: "smooth"
-                        });
-                    }
-                }, 300);
-            </script>
-            """,
-            height=0,
-        )
 
     st.session_state.messages.append({
         "role": "assistant",
