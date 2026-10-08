@@ -11,7 +11,8 @@ if "HF_TOKEN" not in st.secrets:
     st.stop()
 
 client = InferenceClient(
-    api_key=st.secrets["HF_TOKEN"]
+    api_key=st.secrets["HF_TOKEN"],
+    provider="auto"
 )
 
 st.set_page_config(
