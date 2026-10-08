@@ -414,33 +414,49 @@ You are a Medibank OSHC information assistant.
 Answer the user's question using ONLY the official Medibank
 information provided below.
 
-User question:
+USER QUESTION:
 {question}
 
-Official Medibank information:
+OFFICIAL MEDIBANK INFORMATION:
 {context}
 
-Preferred language:
+PREFERRED LANGUAGE:
 {language}
 
-Rules:
-- Answer in the user's preferred language.
-- Use natural and easy-to-understand language.
-- Keep the answer concise.
-- Do not invent insurance benefits or policy details.
-- If the provided information is insufficient, clearly say so.
-- Do not provide medical diagnosis.
-- Do not mention that you are Gemini.
+RULES:
+- Answer directly and naturally.
+- Answer completely in the preferred language.
+- Keep the response concise and easy to understand.
+- Do not invent insurance benefits.
+- Do not add facts that are not supported by the provided information.
+- If the information is insufficient, clearly say so.
+- Never provide a medical diagnosis.
+- Do not mention Hugging Face or the model.
 - Do not say "according to the context".
-- Answer directly like a helpful customer support assistant.
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
+    try:
 
-    return response.text
+        response = client.chat.completions.create(
+            model="Qwen/Qwen2.5-7B-Instruct",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            max_tokens=350,
+            temperature=0.2
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+
+        return (
+            "The AI response service is temporarily unavailable. "
+            "Please try again later."
+        )
         
 # --------------------------------------------------
 # SCORE INDIVIDUAL SENTENCES
