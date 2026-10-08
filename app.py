@@ -15,19 +15,144 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("💬 Medibank OSHC Assistant")
-st.caption("Searches selected official Medibank OSHC pages for relevant information")
+# --------------------------------------------------
+# BRAND-INSPIRED APPEARANCE
+# --------------------------------------------------
+
+st.markdown("""
+<style>
+    .block-container {
+        max-width: 900px;
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    .hero {
+        background: linear-gradient(135deg, #d71920 0%, #ef3340 58%, #ff6b6b 100%);
+        padding: 28px 30px;
+        border-radius: 22px;
+        margin-bottom: 22px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .hero-kicker {
+        color: rgba(255,255,255,0.82);
+        font-size: 0.86rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .hero-title {
+        color: white;
+        font-size: 2.15rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 8px;
+    }
+
+    .hero-subtitle {
+        color: rgba(255,255,255,0.92);
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .trust-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 4px 0 22px 0;
+    }
+
+    .trust-pill {
+        border: 1px solid rgba(128,128,128,0.28);
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 0.84rem;
+        opacity: 0.9;
+    }
+
+    div.stButton > button {
+        border-radius: 12px;
+        min-height: 46px;
+        font-weight: 650;
+        border: 1px solid rgba(128,128,128,0.30);
+        transition: 0.15s ease;
+    }
+
+    div.stButton > button:hover {
+        border-color: #ef3340;
+        transform: translateY(-1px);
+    }
+
+    [data-testid="stChatMessage"] {
+        border-radius: 16px;
+    }
+
+    .section-label {
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        opacity: 0.72;
+        text-transform: uppercase;
+        margin: 12px 0 8px 0;
+    }
+
+    .source-note {
+        font-size: 0.82rem;
+        opacity: 0.72;
+        margin-top: 6px;
+    }
+
+    .prototype-note {
+        border-left: 4px solid #ef3340;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: rgba(239,51,64,0.08);
+        margin-top: 18px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="hero">
+    <div class="hero-kicker">Student concept prototype</div>
+    <div class="hero-title">Medibank OSHC Assistant</div>
+    <p class="hero-subtitle">
+        Quick, multilingual guidance using selected official Medibank OSHC information.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="trust-row">
+    <span class="trust-pill">✓ Official-source retrieval</span>
+    <span class="trust-pill">✓ No API cost</span>
+    <span class="trust-pill">✓ Multilingual support</span>
+    <span class="trust-pill">✓ Source links included</span>
+</div>
+""", unsafe_allow_html=True)
 
 language = st.selectbox(
     "Choose your preferred language",
     ["English", "简体中文", "Bahasa Melayu"]
 )
 
+reset_col, info_col = st.columns([1, 3])
+with reset_col:
+    if st.button("↻ New chat"):
+        st.session_state.messages = []
+        st.rerun()
+
+with info_col:
+    st.caption("Tip: use the quick questions below for the smoothest demo experience.")
+
 # --------------------------------------------------
 # SUGGESTED QUESTIONS
 # --------------------------------------------------
 
-st.markdown("### Try asking:")
+st.markdown('<div class="section-label">Popular questions</div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -612,7 +737,7 @@ for message in st.session_state.messages:
         st.write(message["content"])
 
         if "sources" in message and message["sources"]:
-            st.markdown("**Sources:**")
+            st.markdown("**Official sources**")
             for source in message["sources"]:
                 st.markdown(
                     f"- [{source['source']}]({source['url']})"
@@ -660,7 +785,7 @@ if question:
         st.write(answer)
 
         if sources:
-            st.markdown("**Sources:**")
+            st.markdown("**Official sources**")
             for source in sources:
                 st.markdown(
                     f"- [{source['source']}]({source['url']})"
@@ -678,7 +803,12 @@ if question:
 
 st.divider()
 
-st.caption(
-    "Student prototype only. Information is retrieved from selected publicly available "
-    "Medibank OSHC webpages and should be confirmed against current official policy documents."
-)
+st.markdown("""
+<div class="prototype-note">
+<strong>Concept prototype only.</strong><br>
+This is a student project and is not an official Medibank service. Information is retrieved
+from selected publicly available Medibank OSHC pages and should be confirmed against current
+official policy documents.
+</div>
+""", unsafe_allow_html=True)
+
