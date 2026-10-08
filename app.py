@@ -438,7 +438,7 @@ RULES:
     try:
 
         response = client.chat.completions.create(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="openai/gpt-oss-120b:cheapest",            
             messages=[
                 {
                     "role": "user",
