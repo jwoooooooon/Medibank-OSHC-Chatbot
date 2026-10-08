@@ -1,330 +1,285 @@
 import streamlit as st
+import requests
+from bs4 import BeautifulSoup
+import re
 from difflib import SequenceMatcher
 
-# --------------------------------------------------
-# PAGE SETUP
-# --------------------------------------------------
-
 st.set_page_config(
-    page_title="OSHC Student Assistant",
+    page_title="Medibank OSHC Assistant",
     page_icon="💬",
     layout="centered"
 )
 
-st.title("💬 OSHC Student Assistant")
-st.caption("Multilingual support for international students")
+st.title("💬 Medibank OSHC Assistant")
+st.caption("Searches official Medibank OSHC pages for relevant information")
 
 language = st.selectbox(
     "Choose your preferred language",
-    ["English", "简体中文", "Bahasa Melayu"]
+    ["English", "简体中文"]
 )
 
 # --------------------------------------------------
-# KNOWLEDGE BASE
+# OFFICIAL MEDIBANK SOURCES
 # --------------------------------------------------
 
-faq_data = [
+SOURCES = {
+    "OSHC Overview":
+        "https://www.medibank.com.au/overseas-health-insurance/oshc/",
 
-    # 1. Comprehensive vs Essential
-    {
-        "topic": "Comprehensive vs Essential",
-        "keywords": [
-            "comprehensive", "essential", "difference", "compare",
-            "区别", "差别", "有什么不同",
-            "perbezaan", "banding"
-        ],
+    "Comprehensive OSHC":
+        "https://www.medibank.com.au/overseas-health-insurance/oshc/comprehensive-oshc/",
 
-        "English":
-            "Medibank offers different OSHC cover options such as Essential and "
-            "Comprehensive OSHC. Comprehensive OSHC generally provides additional "
-            "support and benefits compared with a more basic level of cover. "
-            "Students should check the current official Cover Summary before choosing.",
+    "Essentials OSHC":
+        "https://www.medibank.com.au/overseas-health-insurance/oshc/essentials-oshc/",
 
-        "简体中文":
-            "Medibank 提供不同等级的 OSHC，例如 Essential 和 Comprehensive。"
-            "Comprehensive OSHC 通常会比基础等级提供更多保障或额外服务。"
-            "具体保障内容可能更新，因此选择前应查看最新的官方 Cover Summary。",
-
-        "Bahasa Melayu":
-            "Medibank menawarkan beberapa tahap OSHC seperti Essential dan Comprehensive. "
-            "Comprehensive biasanya menyediakan manfaat atau sokongan tambahan berbanding "
-            "pelan yang lebih asas. Sila semak Cover Summary terkini untuk maklumat tepat."
-    },
-
-
-    # 2. Dental
-    {
-        "topic": "Dental",
-        "keywords": [
-            "dental", "dentist", "teeth",
-            "牙医", "牙齿", "牙科",
-            "gigi", "doktor gigi"
-        ],
-
-        "English":
-            "Dental treatment is generally not included under standard OSHC. "
-            "Additional Extras cover may be required. Check your individual policy "
-            "before receiving treatment.",
-
-        "简体中文":
-            "一般的 OSHC 通常不包括牙科治疗。你可能需要额外的 Extras 保险。"
-            "接受治疗前建议先查看自己的保单。",
-
-        "Bahasa Melayu":
-            "Rawatan pergigian biasanya tidak termasuk dalam OSHC standard. "
-            "Anda mungkin memerlukan perlindungan Extras tambahan."
-    },
-
-
-    # 3. GP
-    {
-        "topic": "GP",
-        "keywords": [
-            "gp", "doctor", "general practitioner", "sick",
-            "医生", "看医生", "生病", "全科医生",
-            "doktor", "sakit"
-        ],
-
-        "English":
-            "A GP, or General Practitioner, is usually the first healthcare professional "
-            "you see when you are sick or need general medical advice. "
-            "Some GP clinics may offer direct billing arrangements for OSHC members.",
-
-        "简体中文":
-            "GP 是 General Practitioner，也就是全科医生。"
-            "在澳洲身体不舒服或需要一般医疗建议时，通常可以先预约 GP。"
-            "部分诊所可能提供 OSHC direct billing。",
-
-        "Bahasa Melayu":
-            "GP bermaksud General Practitioner. Biasanya anda boleh berjumpa GP "
-            "terlebih dahulu apabila anda sakit atau memerlukan nasihat perubatan."
-    },
-
-
-    # 4. Claims
-    {
-        "topic": "Claims",
-        "keywords": [
-            "claim", "claims", "refund", "reimburse", "receipt",
-            "报销", "索赔", "claim钱", "退款",
-            "tuntutan", "bayaran balik"
-        ],
-
-        "English":
-            "OSHC claims can usually be submitted through your insurer's digital services "
-            "or member account. Keep your receipt and invoice from the healthcare provider. "
-            "The amount you receive depends on your policy and the service provided.",
-
-        "简体中文":
-            "OSHC 报销通常可以通过保险公司的线上服务或会员账户提交。"
-            "记得保留医生或医疗机构提供的收据和发票。"
-            "实际可报销金额取决于你的保单和医疗服务类型。",
-
-        "Bahasa Melayu":
-            "Tuntutan OSHC biasanya boleh dihantar melalui perkhidmatan digital atau akaun ahli. "
-            "Simpan resit dan invois daripada penyedia kesihatan."
-    },
-
-
-    # 5. Hospital
-    {
-        "topic": "Hospital",
-        "keywords": [
-            "hospital", "hospital treatment", "admission",
-            "医院", "住院", "入院",
-            "hospital", "masuk hospital"
-        ],
-
-        "English":
-            "Eligible hospital treatment may be covered under OSHC, depending on the "
-            "type of treatment and your specific policy. For planned treatment, "
-            "check your cover before admission.",
-
-        "简体中文":
-            "符合条件的医院治疗可能由 OSHC 承担，但具体取决于治疗类型和你的保单。"
-            "如果是非紧急的计划治疗，建议入院前先确认保障范围。",
-
-        "Bahasa Melayu":
-            "Rawatan hospital yang layak mungkin dilindungi oleh OSHC, bergantung pada "
-            "jenis rawatan dan polisi anda."
-    },
-
-
-    # 6. Ambulance
-    {
-        "topic": "Ambulance",
-        "keywords": [
-            "ambulance", "救护车", "救護車",
-            "ambulans"
-        ],
-
-        "English":
-            "OSHC may provide benefits for eligible ambulance services. "
-            "Coverage conditions can vary, so check your policy for the exact rules.",
-
-        "简体中文":
-            "OSHC 可能会保障符合条件的救护车服务。"
-            "具体条件可能因保单而异，因此建议查看你的保险条款。",
-
-        "Bahasa Melayu":
-            "OSHC mungkin menyediakan manfaat untuk perkhidmatan ambulans yang layak. "
-            "Sila semak polisi anda untuk syarat khusus."
-    },
-
-
-    # 7. Prescription medicines
-    {
-        "topic": "Medicines",
-        "keywords": [
-            "medicine", "medication", "pharmacy", "prescription", "drug",
-            "药", "药房", "处方药", "买药",
-            "ubat", "farmasi"
-        ],
-
-        "English":
-            "OSHC may provide benefits toward eligible prescription medicines. "
-            "Limits and out-of-pocket costs may apply depending on your cover.",
-
-        "简体中文":
-            "OSHC 可能会为符合条件的处方药提供部分保障。"
-            "具体上限和自付金额取决于你的保险计划。",
-
-        "Bahasa Melayu":
-            "OSHC mungkin memberikan manfaat untuk ubat preskripsi yang layak. "
-            "Had dan kos sendiri mungkin dikenakan."
-    },
-
-
-    # 8. Interpreter / language
-    {
-        "topic": "Language Support",
-        "keywords": [
-            "interpreter", "translation", "language", "multilingual",
-            "翻译", "语言", "中文", "华语",
-            "bahasa", "terjemahan"
-        ],
-
-        "English":
-            "Multilingual and interpreter support can help international students "
-            "understand healthcare services, insurance information and claims. "
-            "Check Medibank's current support channels for available language services.",
-
-        "简体中文":
-            "多语言及翻译服务可以帮助国际学生理解澳洲医疗、保险和报销流程。"
-            "你可以查看 Medibank 当前提供的语言支持渠道。",
-
-        "Bahasa Melayu":
-            "Sokongan pelbagai bahasa dan jurubahasa boleh membantu pelajar antarabangsa "
-            "memahami perkhidmatan kesihatan, insurans dan tuntutan."
-    },
-
-
-    # 9. Emergency
-    {
-        "topic": "Emergency",
-        "keywords": [
-            "emergency", "urgent", "000", "accident",
-            "紧急", "急诊", "意外",
-            "kecemasan"
-        ],
-
-        "English":
-            "If you are experiencing a medical emergency in Australia, call 000 immediately.",
-
-        "简体中文":
-            "如果你在澳洲遇到医疗紧急情况，请立即拨打 000。",
-
-        "Bahasa Melayu":
-            "Jika anda mengalami kecemasan perubatan di Australia, hubungi 000 dengan segera."
-    },
-
-
-    # 10. Waiting period
-    {
-        "topic": "Waiting Period",
-        "keywords": [
-            "waiting period", "wait", "waiting",
-            "等待期", "多久才能", "等多久",
-            "tempoh menunggu"
-        ],
-
-        "English":
-            "Some treatments or services may have waiting periods. "
-            "The applicable waiting period depends on the service and policy. "
-            "Check the official policy documents before arranging treatment.",
-
-        "简体中文":
-            "部分治疗或服务可能设有等待期。"
-            "具体等待时间取决于医疗服务和保险条款，接受治疗前应查看正式保单。",
-
-        "Bahasa Melayu":
-            "Sesetengah rawatan mungkin mempunyai tempoh menunggu. "
-            "Tempoh tersebut bergantung kepada jenis rawatan dan polisi anda."
-    }
-]
+    "OSHC FAQ":
+        "https://www.medibank.com.au/overseas-health-insurance/guides/for-students/faq/"
+}
 
 
 # --------------------------------------------------
-# FIND BEST ANSWER
+# DOWNLOAD WEBSITE TEXT
 # --------------------------------------------------
 
-def find_answer(question, language):
+@st.cache_data(ttl=3600)
+def get_page_text(url):
 
-    question = question.lower()
-
-    best_faq = None
-    best_score = 0
-
-    for faq in faq_data:
-
-        score = 0
-
-        for keyword in faq["keywords"]:
-
-            keyword = keyword.lower()
-
-            # Direct keyword match
-            if keyword in question:
-                score += 3
-
-            # Fuzzy similarity
-            similarity = SequenceMatcher(
-                None,
-                keyword,
-                question
-            ).ratio()
-
-            if similarity > 0.6:
-                score += similarity
-
-        if score > best_score:
-            best_score = score
-            best_faq = faq
-
-
-    # If good match found
-    if best_faq and best_score >= 2:
-        return best_faq[language], best_faq["topic"]
-
-
-    # Default response
-    default_answers = {
-
-        "English":
-            "I'm not completely sure about that yet. "
-            "Please check your official Medibank OSHC policy or contact Medibank "
-            "for confirmation.",
-
-        "简体中文":
-            "这个问题目前不在我的资料库中。"
-            "建议查看你的 Medibank OSHC 正式保单，或直接联系 Medibank 确认。",
-
-        "Bahasa Melayu":
-            "Soalan ini belum terdapat dalam pangkalan maklumat saya. "
-            "Sila semak polisi Medibank OSHC rasmi anda atau hubungi Medibank."
+    headers = {
+        "User-Agent":
+            "Mozilla/5.0 (compatible; StudentProjectBot/1.0)"
     }
 
-    return default_answers[language], "Unknown"
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
+
+        response.raise_for_status()
+
+        soup = BeautifulSoup(
+            response.text,
+            "html.parser"
+        )
+
+        # Remove scripts/style/navigation noise
+        for element in soup([
+            "script",
+            "style",
+            "nav",
+            "footer",
+            "header"
+        ]):
+            element.decompose()
+
+        text = soup.get_text(
+            separator=" ",
+            strip=True
+        )
+
+        text = re.sub(
+            r"\s+",
+            " ",
+            text
+        )
+
+        return text
+
+    except Exception:
+        return ""
+
+
+# --------------------------------------------------
+# SPLIT TEXT INTO SEARCHABLE CHUNKS
+# --------------------------------------------------
+
+def split_text(text, chunk_size=450):
+
+    sentences = re.split(
+        r"(?<=[.!?])\s+",
+        text
+    )
+
+    chunks = []
+    current = ""
+
+    for sentence in sentences:
+
+        if len(current) + len(sentence) < chunk_size:
+            current += " " + sentence
+
+        else:
+            if current.strip():
+                chunks.append(current.strip())
+
+            current = sentence
+
+    if current.strip():
+        chunks.append(current.strip())
+
+    return chunks
+
+
+# --------------------------------------------------
+# QUESTION KEYWORDS
+# --------------------------------------------------
+
+def clean_words(text):
+
+    stop_words = {
+        "what", "is", "are", "the", "a",
+        "an", "does", "do", "my", "me",
+        "i", "can", "how", "to", "of",
+        "for", "and", "in", "with",
+        "oshc", "medibank"
+    }
+
+    words = re.findall(
+        r"[a-zA-Z]+",
+        text.lower()
+    )
+
+    return [
+        word
+        for word in words
+        if word not in stop_words
+        and len(word) > 2
+    ]
+
+
+# --------------------------------------------------
+# SCORE RELEVANCE
+# --------------------------------------------------
+
+def score_chunk(question, chunk):
+
+    question_lower = question.lower()
+    chunk_lower = chunk.lower()
+
+    keywords = clean_words(question)
+
+    score = 0
+
+    # keyword matching
+    for word in keywords:
+
+        if word in chunk_lower:
+            score += 4
+
+    # useful topic synonyms
+    synonyms = {
+        "dentist": ["dental"],
+        "teeth": ["dental"],
+        "doctor": ["gp", "general practitioner"],
+        "medicine": ["pharmacy", "prescription"],
+        "drug": ["pharmacy", "prescription"],
+        "refund": ["claim"],
+        "reimburse": ["claim"],
+        "emergency": ["ambulance", "emergency"],
+        "compare": ["comprehensive", "essentials"],
+        "difference": ["comprehensive", "essentials"],
+        "interpreter": ["language", "interpreter"]
+    }
+
+    for word in keywords:
+
+        if word in synonyms:
+
+            for synonym in synonyms[word]:
+
+                if synonym in chunk_lower:
+                    score += 3
+
+    # rough fuzzy similarity
+    similarity = SequenceMatcher(
+        None,
+        question_lower,
+        chunk_lower[:300]
+    ).ratio()
+
+    score += similarity
+
+    return score
+
+
+# --------------------------------------------------
+# SEARCH MEDIBANK
+# --------------------------------------------------
+
+@st.cache_data(ttl=3600)
+def build_database():
+
+    database = []
+
+    for source_name, url in SOURCES.items():
+
+        text = get_page_text(url)
+
+        if not text:
+            continue
+
+        chunks = split_text(text)
+
+        for chunk in chunks:
+
+            database.append({
+                "source": source_name,
+                "url": url,
+                "text": chunk
+            })
+
+    return database
+
+
+def search_medibank(question):
+
+    database = build_database()
+
+    results = []
+
+    for item in database:
+
+        score = score_chunk(
+            question,
+            item["text"]
+        )
+
+        results.append({
+            **item,
+            "score": score
+        })
+
+    results.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    return results[:3]
+
+
+# --------------------------------------------------
+# SIMPLE LANGUAGE OUTPUT
+# --------------------------------------------------
+
+def simplify_answer(result, language):
+
+    text = result["text"]
+
+    if language == "简体中文":
+
+        return (
+            "我从 Medibank 官方资料找到以下相关内容：\n\n"
+            + text +
+            "\n\n由于这是免费 prototype，"
+            "目前不会自动把英文完整翻译成中文。"
+            "建议查看下面的官方来源确认。"
+        )
+
+    return (
+        "According to Medibank's official information:\n\n"
+        + text
+    )
 
 
 # --------------------------------------------------
@@ -340,15 +295,21 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
+        if "source" in message:
+
+            st.markdown(
+                f"[Source: {message['source']}]"
+                f"({message['url']})"
+            )
+
 
 # --------------------------------------------------
-# CHAT INPUT
+# USER INPUT
 # --------------------------------------------------
 
 question = st.chat_input(
-    "Ask me about your OSHC..."
+    "Ask about Medibank OSHC..."
 )
-
 
 if question:
 
@@ -361,20 +322,65 @@ if question:
         st.write(question)
 
 
-    answer, topic = find_answer(
-        question,
-        language
-    )
+    with st.spinner(
+        "Searching Medibank official information..."
+    ):
+
+        results = search_medibank(question)
+
+
+    if (
+        not results
+        or results[0]["score"] < 1
+    ):
+
+        answer = (
+            "I couldn't find a reliable answer "
+            "from the selected Medibank pages."
+        )
+
+        source = None
+        url = None
+
+    else:
+
+        best = results[0]
+
+        answer = simplify_answer(
+            best,
+            language
+        )
+
+        source = best["source"]
+        url = best["url"]
 
 
     with st.chat_message("assistant"):
+
         st.write(answer)
 
+        if source:
 
-    st.session_state.messages.append({
+            st.markdown(
+                f"**Official source:** "
+                f"[{source}]({url})"
+            )
+
+
+    message = {
         "role": "assistant",
         "content": answer
-    })
+    }
+
+    if source:
+
+        message["source"] = source
+        message["url"] = url
+
+
+    st.session_state.messages.append(
+        message
+    )
 
 
 # --------------------------------------------------
@@ -384,6 +390,8 @@ if question:
 st.divider()
 
 st.caption(
-    "Prototype only — information provided by this assistant should be "
-    "confirmed against current official Medibank OSHC policy documents."
+    "Student prototype only. "
+    "Information is retrieved from selected publicly available "
+    "Medibank OSHC webpages and should be confirmed against "
+    "current official policy documents."
 )
