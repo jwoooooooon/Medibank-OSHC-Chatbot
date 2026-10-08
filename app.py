@@ -619,7 +619,7 @@ if question:
             question
         )
 
-        answer, selected = create_concise_answer(
+        answer = generate_ai_answer(
             question,
             results,
             language
