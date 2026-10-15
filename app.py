@@ -699,7 +699,23 @@ if "messages" not in st.session_state:
 if "scroll_to_latest" not in st.session_state:
     st.session_state.scroll_to_latest = False
 
-for message in st.session_state.messages:
+# Find the newest user message so we can scroll to the START
+# of the newest question + answer exchange.
+latest_user_index = None
+for i in range(len(st.session_state.messages) - 1, -1, -1):
+    if st.session_state.messages[i]["role"] == "user":
+        latest_user_index = i
+        break
+
+for i, message in enumerate(st.session_state.messages):
+
+    # Put the scroll target immediately BEFORE the newest user question.
+    if i == latest_user_index:
+        st.markdown(
+            '<div id="latest-exchange-anchor" style="scroll-margin-top: 90px;"></div>',
+            unsafe_allow_html=True
+        )
+
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
@@ -710,19 +726,15 @@ for message in st.session_state.messages:
                     f"- [{source['source']}]({source['url']})"
                 )
 
-# Stable anchor immediately after the latest chat message.
-# When a new answer is created, the next rerun scrolls here.
-st.markdown('<div id="latest-chat-anchor"></div>', unsafe_allow_html=True)
-
 if st.session_state.scroll_to_latest:
     components.html(
         """
         <script>
-        const anchor = window.parent.document.getElementById("latest-chat-anchor");
+        const anchor = window.parent.document.getElementById("latest-exchange-anchor");
         if (anchor) {
             anchor.scrollIntoView({
                 behavior: "smooth",
-                block: "end"
+                block: "start"
             });
         }
         </script>
@@ -911,8 +923,8 @@ if question:
         "sources": sources
     })
 
-    # Re-render the conversation from session state, then scroll to
-    # the stable anchor directly under the latest assistant response.
+    # Re-render the conversation, then scroll to the newest USER question
+    # so the newest question + answer exchange is visible together.
     st.session_state.scroll_to_latest = True
     st.rerun()
 
