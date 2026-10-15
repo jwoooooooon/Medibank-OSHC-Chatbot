@@ -190,6 +190,10 @@ TEMPLATES = {
             "Anda boleh menghantar tuntutan OSHC yang layak melalui aplikasi Medibank OSHC. "
             "Aplikasi itu juga membolehkan anda melihat butiran perlindungan dan mencari penyedia kesihatan."
         ),
+        "हिन्दी": (
+            "आप Medibank OSHC App के माध्यम से पात्र OSHC क्लेम जमा कर सकते हैं। "
+            "इस App में आप अपने कवर की जानकारी देख सकते हैं और स्वास्थ्य सेवा प्रदाता भी खोज सकते हैं।"
+        ),
     },
     "interpreter": {
         "keywords": ["interpreter", "24/7 student health and support line", "student health and support line"],
@@ -203,6 +207,10 @@ TEMPLATES = {
         "Bahasa Melayu": (
             "Ya. Ahli Medibank OSHC boleh mendapatkan sokongan jurubahasa melalui "
             "24/7 Student Health and Support Line."
+        ),
+        "हिन्दी": (
+            "हाँ। Medibank OSHC सदस्य 24/7 Student Health and Support Line के माध्यम से "
+            "दुभाषिया सहायता प्राप्त कर सकते हैं।"
         ),
     },
     "emergency": {
@@ -219,6 +227,10 @@ TEMPLATES = {
             "Medibank OSHC merangkumi perlindungan ambulans kecemasan yang layak di seluruh Australia. "
             "Jika berlaku kecemasan perubatan, hubungi 000."
         ),
+        "हिन्दी": (
+            "Medibank OSHC में पात्र आपातकालीन एम्बुलेंस कवर पूरे ऑस्ट्रेलिया में शामिल हो सकता है। "
+            "चिकित्सीय आपातकाल में 000 पर कॉल करें।"
+        ),
     },
     "dental": {
         "keywords": ["dental", "dentist", "extras"],
@@ -234,6 +246,10 @@ TEMPLATES = {
             "Rawatan pergigian biasanya tidak termasuk dalam perlindungan hospital dan perubatan OSHC standard. "
             "Anda mungkin memerlukan perlindungan Extras yang berasingan."
         ),
+        "हिन्दी": (
+            "डेंटल उपचार आमतौर पर मानक OSHC अस्पताल और मेडिकल कवर में शामिल नहीं होता। "
+            "इसके लिए अलग Extras cover की आवश्यकता हो सकती है।"
+        ),
     },
     "medicine": {
         "keywords": ["prescription", "pharmacy", "pharmaceutical", "medicine"],
@@ -245,6 +261,9 @@ TEMPLATES = {
         ),
         "Bahasa Melayu": (
             "OSHC mungkin memberi manfaat untuk ubat preskripsi yang layak, tertakluk pada had dan syarat perlindungan anda."
+        ),
+        "हिन्दी": (
+            "OSHC पात्र prescription medicines के लिए लाभ दे सकता है, जो आपके cover limits और conditions पर निर्भर करता है।"
         ),
     },
     "compare": {
@@ -263,6 +282,11 @@ TEMPLATES = {
             "Comprehensive OSHC dan Essentials OSHC ialah dua pilihan perlindungan Medibank yang berbeza. "
             "Secara umum, Comprehensive menawarkan sokongan atau manfaat tambahan, manakala Essentials ialah pilihan yang lebih asas. "
             "Sila semak Cover Summary rasmi terkini untuk perbezaan tepat."
+        ),
+        "हिन्दी": (
+            "Comprehensive OSHC और Essentials OSHC Medibank के दो अलग cover options हैं। "
+            "आमतौर पर Comprehensive में अधिक support या additional benefits होते हैं, जबकि Essentials अधिक basic option है। "
+            "सटीक अंतर के लिए latest official Cover Summary देखें।"
         ),
     },
 }
@@ -407,6 +431,24 @@ QUESTION_TRANSLATIONS = {
         "preskripsi": "prescription",
         "perbezaan": "difference",
         "banding": "compare",
+    },
+    "हिन्दी": {
+        "क्लेम": "claim",
+        "दावा": "claim",
+        "रिफंड": "claim",
+        "दांत": "dental",
+        "डेंटल": "dental",
+        "डॉक्टर": "doctor",
+        "एम्बुलेंस": "ambulance",
+        "आपातकाल": "emergency",
+        "इमरजेंसी": "emergency",
+        "दुभाषिया": "interpreter",
+        "अनुवाद": "interpreter",
+        "भाषा": "language",
+        "दवा": "medicine",
+        "प्रिस्क्रिप्शन": "prescription",
+        "अंतर": "difference",
+        "तुलना": "compare",
     }
 }
 
@@ -654,7 +696,10 @@ def fallback_extract_answer(question, results, language):
                 "请使用下方来源链接查看最新官方保单详情。",
             "Bahasa Melayu":
                 "Saya tidak menemui maklumat yang mencukupi pada halaman Medibank yang dipilih. "
-                "Sila gunakan pautan sumber di bawah untuk menyemak butiran polisi rasmi terkini."
+                "Sila gunakan pautan sumber di bawah untuk menyemak butiran polisi rasmi terkini.",
+            "हिन्दी":
+                "मुझे चुने गए Medibank पेजों पर पर्याप्त विश्वसनीय जानकारी नहीं मिली। "
+                "कृपया नीचे दिए गए official source links से नवीनतम policy details जांचें।"
         }[language]
 
     # For unknown topics, preserve official wording rather than inventing a translation.
@@ -667,9 +712,16 @@ def fallback_extract_answer(question, results, language):
             + " ".join(selected)
         )
 
+    if language == "Bahasa Melayu":
+        return (
+            "Saya menemui kandungan rasmi Medibank yang paling berkaitan di bawah. "
+            "Versi percuma ini tidak akan menterjemah atau membuat andaian jika maklumat tidak mencukupi:\n\n"
+            + " ".join(selected)
+        )
+
     return (
-        "Saya menemui kandungan rasmi Medibank yang paling berkaitan di bawah. "
-        "Versi percuma ini tidak akan menterjemah atau membuat andaian jika maklumat tidak mencukupi:\n\n"
+        "मुझे नीचे सबसे संबंधित official Medibank content मिला है। "
+        "यदि जानकारी पर्याप्त नहीं है, तो यह free prototype अनुमान या unsupported translation नहीं करेगा:\n\n"
         + " ".join(selected)
     )
 
@@ -679,7 +731,8 @@ def create_answer(question, results, language):
         return {
             "English": "I couldn't retrieve enough information from the selected Medibank pages.",
             "简体中文": "我暂时无法从所选的 Medibank 页面获取足够的信息。",
-            "Bahasa Melayu": "Saya tidak dapat mendapatkan maklumat yang mencukupi daripada halaman Medibank yang dipilih."
+            "Bahasa Melayu": "Saya tidak dapat mendapatkan maklumat yang mencukupi daripada halaman Medibank yang dipilih.",
+            "हिन्दी": "मुझे चुने गए Medibank पेजों से पर्याप्त जानकारी नहीं मिल सकी।"
         }[language]
 
     topic = detect_topic(question, results, language)
@@ -755,7 +808,8 @@ if "language" not in st.session_state:
 settings_label = {
     "English": "Chat settings",
     "简体中文": "聊天设置",
-    "Bahasa Melayu": "Tetapan chat"
+    "Bahasa Melayu": "Tetapan chat",
+    "हिन्दी": "चैट सेटिंग्स"
 }[st.session_state.language]
 
 st.markdown(
@@ -768,7 +822,7 @@ settings_col1, settings_col2 = st.columns([3, 1])
 with settings_col1:
     language = st.selectbox(
         "Language",
-        ["English", "简体中文", "Bahasa Melayu"],
+        ["English", "简体中文", "Bahasa Melayu", "हिन्दी"],
         key="language",
         label_visibility="collapsed"
     )
@@ -776,7 +830,8 @@ with settings_col1:
 new_chat_label = {
     "English": "↻ New chat",
     "简体中文": "↻ 新聊天",
-    "Bahasa Melayu": "↻ Chat baharu"
+    "Bahasa Melayu": "↻ Chat baharu",
+    "हिन्दी": "↻ नई चैट"
 }[language]
 
 with settings_col2:
@@ -830,6 +885,21 @@ SUGGESTED_QUESTIONS = {
          "Apa perlu saya lakukan semasa kecemasan perubatan?"),
         ("Adakah OSHC melindungi ubat preskripsi?", 
          "Adakah OSHC melindungi ubat preskripsi?")
+    ],
+
+    "हिन्दी": [
+        ("Comprehensive और Essentials में क्या अंतर है?",
+         "Comprehensive और Essentials OSHC में क्या अंतर है?"),
+        ("क्या OSHC डेंटल उपचार को कवर करता है?",
+         "क्या OSHC डेंटल उपचार को कवर करता है?"),
+        ("मैं OSHC क्लेम कैसे करूँ?",
+         "मैं OSHC क्लेम कैसे करूँ?"),
+        ("क्या मुझे दुभाषिया मिल सकता है?",
+         "क्या मुझे दुभाषिया मिल सकता है?"),
+        ("मेडिकल इमरजेंसी में मुझे क्या करना चाहिए?",
+         "मेडिकल इमरजेंसी में मुझे क्या करना चाहिए?"),
+        ("क्या OSHC prescription medicine को कवर करता है?",
+         "क्या OSHC prescription medicine को कवर करता है?")
     ]
 }
 
@@ -840,7 +910,8 @@ SUGGESTED_QUESTIONS = {
 suggested_label = {
     "English": "Suggested questions",
     "简体中文": "建议问题",
-    "Bahasa Melayu": "Soalan cadangan"
+    "Bahasa Melayu": "Soalan cadangan",
+    "हिन्दी": "सुझाए गए प्रश्न"
 }[language]
 
 st.markdown(f'<div class="section-label">{suggested_label}</div>', unsafe_allow_html=True)
