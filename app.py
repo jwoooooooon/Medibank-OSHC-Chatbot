@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -695,6 +696,9 @@ def create_answer(question, results, language):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "scroll_to_latest" not in st.session_state:
+    st.session_state.scroll_to_latest = False
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
@@ -705,6 +709,28 @@ for message in st.session_state.messages:
                 st.markdown(
                     f"- [{source['source']}]({source['url']})"
                 )
+
+# Stable anchor immediately after the latest chat message.
+# When a new answer is created, the next rerun scrolls here.
+st.markdown('<div id="latest-chat-anchor"></div>', unsafe_allow_html=True)
+
+if st.session_state.scroll_to_latest:
+    components.html(
+        """
+        <script>
+        const anchor = window.parent.document.getElementById("latest-chat-anchor");
+        if (anchor) {
+            anchor.scrollIntoView({
+                behavior: "smooth",
+                block: "end"
+            });
+        }
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+    st.session_state.scroll_to_latest = False
 
 # --------------------------------------------------
 # CHAT CONTROLS
@@ -744,6 +770,7 @@ new_chat_label = {
 with settings_col2:
     if st.button(new_chat_label, use_container_width=True):
         st.session_state.messages = []
+        st.session_state.scroll_to_latest = False
         st.rerun()
 
 # Suggested-question text changes with the selected language
@@ -883,6 +910,11 @@ if question:
         "content": answer,
         "sources": sources
     })
+
+    # Re-render the conversation from session state, then scroll to
+    # the stable anchor directly under the latest assistant response.
+    st.session_state.scroll_to_latest = True
+    st.rerun()
 
 # --------------------------------------------------
 # DISCLAIMER
